@@ -9,7 +9,7 @@
 // Execute `rustlings hint try_from_into` or use the `hint` watch subcommand for
 // a hint.
 
-use std::convert::{TryFrom, TryInto};
+use std::{convert::{TryFrom, TryInto}, error};
 
 #[derive(Debug, PartialEq)]
 struct Color {
@@ -27,8 +27,6 @@ enum IntoColorError {
     IntConversion,
 }
 
-// I AM NOT DONE
-
 // Your task is to complete this implementation and return an Ok result of inner
 // type Color. You need to create an implementation for a tuple of three
 // integers, an array of three integers, and a slice of integers.
@@ -41,13 +39,28 @@ enum IntoColorError {
 impl TryFrom<(i16, i16, i16)> for Color {
     type Error = IntoColorError;
     fn try_from(tuple: (i16, i16, i16)) -> Result<Self, Self::Error> {
+        let (r, g, b) = (u8::try_from(tuple.0), u8::try_from(tuple.1), u8::try_from(tuple.2));
+        match (r, g, b) {
+            (Ok(r), Ok(g), Ok(b)) => Ok(Color {red: r, green: g, blue: b}),
+            _ => return Err(IntoColorError::IntConversion)
+        }
     }
 }
 
 // Array implementation
 impl TryFrom<[i16; 3]> for Color {
     type Error = IntoColorError;
-    fn try_from(arr: [i16; 3]) -> Result<Self, Self::Error> {
+    fn try_from(_arr: [i16; 3]) -> Result<Self, Self::Error> {
+        let mut new_arr: [u8; 3] = [0,0,0];
+        for i in _arr.iter() {
+            if u8::try_from(*i).is_err() {
+                return Err(IntoColorError::IntConversion);
+            }
+        }
+        new_arr[0] = u8::try_from(_arr[0]).ok().unwrap();
+        new_arr[1] = u8::try_from(_arr[1]).ok().unwrap();
+        new_arr[2] = u8::try_from(_arr[2]).ok().unwrap();
+        Ok(Color {red: new_arr[0], green: new_arr[1], blue: new_arr[2]})
     }
 }
 
@@ -55,6 +68,19 @@ impl TryFrom<[i16; 3]> for Color {
 impl TryFrom<&[i16]> for Color {
     type Error = IntoColorError;
     fn try_from(slice: &[i16]) -> Result<Self, Self::Error> {
+        if slice.len() != 3 {
+            return Err(IntoColorError::BadLen);
+        }
+        let mut v = vec![0, 0, 0];
+        for i in slice.iter() {
+            if u8::try_from(*i).is_err() {
+                return Err(IntoColorError::IntConversion);
+            }
+        }
+        v[0] = u8::try_from(slice[0]).ok().unwrap();
+        v[1] = u8::try_from(slice[1]).ok().unwrap();
+        v[2] = u8::try_from(slice[2]).ok().unwrap();
+        Ok(Color {red: v[0], green: v[1], blue: v[2]})
     }
 }
 
